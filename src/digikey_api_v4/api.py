@@ -1,5 +1,28 @@
-import requests
 import time
+from pathlib import Path
+import json
+
+import requests
+from bravado.client import SwaggerClient
+from bravado.requests_client import RequestsClient, Authenticator
+
+
+class DigikeyAuthenticator(Authenticator):
+    def __init__(self, host: str, client_id: str, token: str):
+        super().__init__(host=host)
+        self.__client_id = client_id
+        self.__token = token
+
+    def apply(self, req: requests.Request) -> requests.Request:
+        req.headers.setdefault(
+            "X-DIGIKEY-Client-Id",
+            self.__client_id,
+        )
+        req.headers.setdefault(
+            "Authorization",
+            f"Bearer {self.__token}",
+        )
+        return req
 
 
 class DigikeyClient:
@@ -10,15 +33,49 @@ class DigikeyClient:
         self.__token2_json = None
 
     @property
+    def _http_client(self) -> RequestsClient:
+        client = RequestsClient()
+        client.authenticator = DigikeyAuthenticator(
+            host=self._api_host,
+            client_id=self.__client_id,
+            token=self._token2,
+        )
+        return client
+
+    def _swagger_path(self, name: str) -> str:
+        return str(Path(__file__).absolute().parent / "swagger" / name)
+
+    def _swagger_dict(self, name: str) -> dict:
+        with open(self._swagger_path(name), "r") as f:
+            data = json.load(f)
+            data["host"] = self._api_host
+            return data
+
+    def _client(self, name: str) -> SwaggerClient:
+        return SwaggerClient.from_spec(
+            self._swagger_dict(name),
+            http_client=self._http_client,
+            config={"validate_responses": False},
+        )
+
+    @property
+    def product_search(self):
+        return self._client("ProductSearch.json")
+
+    @property
     def _api_host(self) -> str:
         if self.sandbox:
-            return "https://sandbox-api.digikey.com"
+            return "sandbox-api.digikey.com"
         else:
-            return "https://api.digikey.com"
+            return "api.digikey.com"
+
+    @property
+    def _api_host_https(self) -> str:
+        return f"https://{self._api_host}"
 
     @property
     def _token_endpoint(self) -> str:
-        return f"{self._api_host}/v1/oauth2/token"
+        return f"{self._api_host_https}/v1/oauth2/token"
 
     @property
     def _token2_expired(self) -> bool:

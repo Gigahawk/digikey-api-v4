@@ -57,6 +57,16 @@
         hacks = pkgs.callPackage pyproject-nix.build.hacks { };
 
         pyprojectOverrides = final: prev: {
+          bravado-core = prev.bravado-core.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or [ ]) ++ [
+              prev.setuptools
+            ];
+          });
+          bravado = prev.bravado.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or [ ]) ++ [
+              prev.setuptools
+            ];
+          });
           # Example overrides to fix build
           # psycopg2 = prev.psycopg2.overrideAttrs (old: {
           #   buildInputs = (old.buildInputs or [ ]) ++ [
