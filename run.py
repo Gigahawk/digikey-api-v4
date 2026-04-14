@@ -26,22 +26,6 @@ client = DigikeyClient(
     sandbox=creds["SANDBOX"],
 )
 
-ps = client.product_search
 
-
-print(ps)
-
-
-# Seems to randomly 504/502?
-while True:
-    try:
-        # TODO: shouldn't need to provide client id here
-        z = ps.ProductSearch.ProductDetails(
-            productNumber="311-0.0JRCT-ND",
-            **{"X-DIGIKEY-Client-Id": creds["CLIENT_ID"]},
-        )
-        pprint(z.response().result)
-        break
-    except (HTTPGatewayTimeout, HTTPBadGateway):
-        print("Gateway timeout")
-        sleep(1)
+z = client.categories_by_id(233)
+pprint(z.response().result)
