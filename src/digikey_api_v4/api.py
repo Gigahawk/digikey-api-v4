@@ -1,8 +1,7 @@
 import time
-from pathlib import Path
-import json
 import functools
 import inspect
+from warnings import deprecated
 
 import requests
 from bravado.client import SwaggerClient
@@ -10,6 +9,8 @@ from bravado.requests_client import RequestsClient, Authenticator
 from bravado.exception import HTTPGatewayTimeout, HTTPBadGateway
 
 from digikey_api_v4.constants import LocaleCurrency, LocaleLanguage, LocaleSite
+from digikey_api_v4.utils import swagger_dict, swagger_client
+from digikey_api_v4.models import KeywordRequest
 
 
 class DigikeyAuthenticator(Authenticator):
@@ -48,10 +49,10 @@ def swagger_call(func):
         for idx in range(retries):
             idx += 1
             try:
-                return swagger_func(**params)
-            except (HTTPBadGateway, HTTPGatewayTimeout):
+                return swagger_func(**params).result()
+            except (HTTPBadGateway, HTTPGatewayTimeout) as err:
                 # Handle random 504/502 errors
-                print(f"Call {idx} to {swagger_func} failed")
+                print(f"Call {idx} to {swagger_func.operation} failed with {err}")
                 if idx < retries:
                     print(f"Retrying after {retry_delay} seconds...")
                     time.sleep(retry_delay)
@@ -93,18 +94,15 @@ class DigikeyClient:
         )
         return client
 
-    def _swagger_path(self, name: str) -> str:
-        return str(Path(__file__).absolute().parent / "swagger" / name)
-
     def _swagger_dict(self, name: str) -> dict:
-        with open(self._swagger_path(name), "r") as f:
-            data = json.load(f)
-            data["host"] = self._api_host
-            return data
+        data = swagger_dict(name)
+        # TODO: do we actually need to change the host?
+        data["host"] = self._api_host
+        return data
 
     def _client(self, name: str) -> SwaggerClient:
-        return SwaggerClient.from_spec(
-            self._swagger_dict(name),
+        return swagger_client(
+            _dict=self._swagger_dict(name),
             http_client=self._http_client,
             config={
                 # Sometimes returns invalid responses?
@@ -133,12 +131,15 @@ class DigikeyClient:
 
     @property
     def _product_search(self):
-        import pdb
-
-        pdb.set_trace()
         return self._client("ProductSearch.json").ProductSearch
 
-    # TODO: how to handle the weird keyword search schema???
+    @swagger_call
+    def keyword_search(
+        self,
+        includes: str | None = None,
+        body: KeywordRequest = KeywordRequest(),
+    ):
+        return self._product_search.KeywordSearch
 
     @swagger_call
     def product_details(
@@ -181,6 +182,80 @@ class DigikeyClient:
         requestedQuantity: int,
     ):
         return self._product_search.DigiReelPricing
+
+    @swagger_call
+    def recommended_products(
+        self,
+        productNumber: str,
+        limit: int = 1,
+        searchOptionList: str | None = None,
+        excludeMarketPlaceProducts: bool = True,
+    ):
+        return self._product_search.RecommendedProducts
+
+    @swagger_call
+    def substitutions(
+        self,
+        productNumber: str,
+        includes: str | None = None,
+    ):
+        return self._product_search.Substitutions
+
+    @swagger_call
+    def associations(
+        self,
+        productNumber: str,
+    ):
+        return self._product_search.Associations
+
+    @deprecated(
+        (
+            "Deprecated – please use PricingByQuantity endpoint to receive "
+            "pricing for all package types when you enter a product number "
+            "and desired quantity"
+        )
+    )
+    @swagger_call
+    def package_type_by_quantity(
+        self,
+        productNumber: str,
+    ):
+        return self._product_search.PackageTypeByQuantity
+
+    @swagger_call
+    def media(
+        self,
+        productNumber: str,
+    ):
+        return self._product_search.Media
+
+    @swagger_call
+    def product_pricing(
+        self,
+        productNumber: str,
+        limit: int = 5,
+        offset: int = 0,
+        inStock: bool = False,
+        excludeMarketplace: bool = True,
+        excludeTariff: bool = False,
+    ):
+        return self._product_search.ProductPricing
+
+    @swagger_call
+    def alternate_packaging(
+        self,
+        productNumber: str,
+    ):
+        return self._product_search.AlternatePackaging
+
+    @swagger_call
+    def pricing_options_by_quantity(
+        self,
+        productNumber: str,
+        requestedQuantity: str,
+        manufacturerId: str | None = None,
+    ):
+        return self._product_search.PricingOptionsByQuantity
 
     @property
     def _api_host(self) -> str:

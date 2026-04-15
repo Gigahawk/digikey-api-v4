@@ -1,10 +1,9 @@
-from time import sleep
 from pprint import pprint
 import json
 
-from bravado.exception import HTTPGatewayTimeout, HTTPBadGateway
 
 from digikey_api_v4.api import DigikeyClient
+from digikey_api_v4.models import KeywordRequest
 
 # creds.json should contain:
 #
@@ -27,5 +26,5 @@ client = DigikeyClient(
 )
 
 
-z = client.categories_by_id(233)
-pprint(z.response().result)
+z = client.keyword_search(body=KeywordRequest(Keywords="RC0402JR"))
+pprint(z)

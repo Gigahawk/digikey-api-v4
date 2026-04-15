@@ -3424,6 +3424,11 @@
         }
     },
     "securityDefinitions": {
+        "apiKeySecurity": {
+            "type": "apiKey",
+            "name": "X-DIGIKEY-Client-Id",
+            "in": "header"
+        },
         "oauth2ApplicationSecurity": {
             "type": "oauth2",
             "flow": "application",
@@ -3432,6 +3437,7 @@
     },
     "security": [
         {
+            "apiKeySecurity": [],
             "oauth2ApplicationSecurity": []
         }
     ],

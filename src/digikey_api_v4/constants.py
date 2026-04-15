@@ -1,7 +1,5 @@
 import enum
 
-from six.moves import UserDict
-
 
 class LocaleLanguage(enum.Enum):
     EN = "en"
