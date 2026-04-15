@@ -7,7 +7,7 @@ dev = ["pytest>=9.0.2"]
 
 [project]
 name = "digikey-api-v4"
-version = "0.1.0"
+version = "0.2.1"
 description = "Python DigiKey API module"
 readme = "README.md"
 requires-python = ">=3.12"
