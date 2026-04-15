@@ -1,7 +1,7 @@
 import time
 import functools
 import inspect
-from warnings import deprecated
+import warnings
 
 import requests
 from bravado.client import SwaggerClient
@@ -208,18 +208,19 @@ class DigikeyClient:
     ):
         return self._product_search.Associations
 
-    @deprecated(
-        (
-            "Deprecated – please use PricingByQuantity endpoint to receive "
-            "pricing for all package types when you enter a product number "
-            "and desired quantity"
-        )
-    )
     @swagger_call
     def package_type_by_quantity(
         self,
         productNumber: str,
     ):
+        warnings.warn(
+            (
+                "Deprecated - please use PricingByQuantity endpoint to receive "
+                "pricing for all package types when you enter a product number "
+                "and desired quantity"
+            ),
+            warnings.DeprecationWarning,
+        )
         return self._product_search.PackageTypeByQuantity
 
     @swagger_call
