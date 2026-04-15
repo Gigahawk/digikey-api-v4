@@ -6,7 +6,11 @@ import warnings
 import requests
 from bravado.client import SwaggerClient
 from bravado.requests_client import RequestsClient, Authenticator
-from bravado.exception import HTTPGatewayTimeout, HTTPBadGateway
+from bravado.exception import (
+    HTTPGatewayTimeout,
+    HTTPBadGateway,
+    HTTPInternalServerError,
+)
 
 from digikey_api_v4.constants import LocaleCurrency, LocaleLanguage, LocaleSite
 from digikey_api_v4.utils import swagger_dict, swagger_client
@@ -50,7 +54,7 @@ def swagger_call(func):
             idx += 1
             try:
                 return swagger_func(**params).result()
-            except (HTTPBadGateway, HTTPGatewayTimeout) as err:
+            except (HTTPBadGateway, HTTPGatewayTimeout, HTTPInternalServerError) as err:
                 # Handle random 504/502 errors
                 print(f"Call {idx} to {swagger_func.operation} failed with {err}")
                 if idx < retries:
